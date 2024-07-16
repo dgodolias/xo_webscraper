@@ -55,6 +55,10 @@ def scrape_xo_gr(profession, location, page_num):
     data = []
 
     for listing in listings:
+        # Check if listing has a website
+        if listing.find('li', class_='listingWebsite'):
+            continue
+
         name = listing.find('span', itemprop='name').text
         address = listing.find('span', id=lambda x: x and x.startswith('listingAddress')).text.replace('\n', ', ')
         
@@ -125,8 +129,8 @@ def update_excel(file_path, new_data):
         book.save(file_path)
 
 def main():
-    profession = "οδοντιατροι"
-    location = "αθηνα"
+    profession = 'ορθοδοντικοι'
+    location = 'αθηνα'
     excel_file = 'info.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
