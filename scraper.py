@@ -1,5 +1,7 @@
 import pandas as pd
-from openpyxl import load_workbook, Workbook
+from openpyxl import load_workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import Font
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -23,8 +25,7 @@ def init_driver():
     chrome_options.add_argument("window-size=1920,1080")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-    service = Service('/path/to/chromedriver')  # Update path to chromedriver
-    return webdriver.Chrome(service=service, options=chrome_options)
+    return webdriver.Chrome(options=chrome_options)
 
 def get_current_chrome_processes():
     chrome_pids = []
@@ -101,24 +102,27 @@ def ensure_headers(file_path):
 def update_excel(file_path, new_data):
     ensure_headers(file_path)
 
-    # Load existing workbook
-    df = pd.read_excel(file_path)
+    # Load existing workbook and preserve formatting
+    book = load_workbook(file_path)
+    sheet = book.active
+    existing_data = pd.read_excel(file_path)
     
     # Check for duplicates and append new data
     new_entries = []
     for entry in new_data:
-        if not check_entry_exists(df, entry['Phone'], entry['Mobile']):
+        if not check_entry_exists(existing_data, entry['Phone'], entry['Mobile']):
             new_entries.append(entry)
-    
+
     if new_entries:
         new_df = pd.DataFrame(new_entries)
-        df = pd.concat([df, new_df], ignore_index=True)
-        df.to_excel(file_path, index=False)
+        for r in dataframe_to_rows(new_df, index=False, header=False):
+            sheet.append(r)
+        book.save(file_path)
 
 def main():
-    profession = input('Enter the profession: ')
-    location = input('Enter the location: ')
-    page_num = input('Enter the page number: ')
+    profession = "οδοντιατροι"
+    location = "αθηνα"
+    page_num = "1"
     excel_file = 'info.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
