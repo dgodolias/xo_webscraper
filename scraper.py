@@ -122,7 +122,7 @@ def update_excel(file_path, new_data):
 def main():
     profession = "οδοντιατροι"
     location = "αθηνα"
-    page_num = "1"
+    page_num ="1"
     excel_file = 'info.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
