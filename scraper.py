@@ -23,7 +23,8 @@ def init_driver():
     chrome_options.add_argument("window-size=1920,1080")
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 
-    return webdriver.Chrome(options=chrome_options)
+    service = Service('/path/to/chromedriver')  # Update path to chromedriver
+    return webdriver.Chrome(service=service, options=chrome_options)
 
 def get_current_chrome_processes():
     chrome_pids = []
