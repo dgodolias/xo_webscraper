@@ -1,7 +1,6 @@
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
-from openpyxl.styles import Font
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -80,9 +79,15 @@ def scrape_xo_gr(profession, location, page_num):
     return data
 
 def check_entry_exists(df, phone, mobile):
-    phone = str(phone).strip()
-    mobile = str(mobile).strip()
-    return ((df['Phone'].astype(str).str.strip() == phone) | (df['Mobile'].astype(str).str.strip() == mobile)).any()
+    phone_str = str(phone).strip()
+    mobile_str = str(mobile).strip()
+    phone_num = int(phone) if phone.isdigit() else None
+    mobile_num = int(mobile) if mobile.isdigit() else None
+
+    phone_exists = df['Phone'].astype(str).str.strip().eq(phone_str).any() or (phone_num is not None and df['Phone'].eq(phone_num).any())
+    mobile_exists = df['Mobile'].astype(str).str.strip().eq(mobile_str).any() or (mobile_num is not None and df['Mobile'].eq(mobile_num).any())
+
+    return phone_exists or mobile_exists
 
 def ensure_headers(file_path):
     headers = ['Name', 'Address', 'Profession', 'Phone', 'Mobile', 'Email', 'Ωρα']
@@ -122,14 +127,14 @@ def update_excel(file_path, new_data):
 def main():
     profession = "οδοντιατροι"
     location = "αθηνα"
-    page_num ="1"
     excel_file = 'info.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
-    
-    new_data = scrape_xo_gr(profession, location, page_num)
-    update_excel(excel_file, new_data)
-    
+
+    for page_num in range(1, 6):
+        new_data = scrape_xo_gr(profession, location, page_num)
+        update_excel(excel_file, new_data)
+
     kill_new_chrome_processes(initial_chrome_pids)
     print('Data has been successfully appended to the Excel file.')
 
