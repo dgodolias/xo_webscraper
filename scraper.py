@@ -47,15 +47,29 @@ def scrape_xo_gr(profession, location, page_num):
     driver = init_driver()
     url = f'https://www.xo.gr/search/?what={profession}&where={location}&locId=B2&page={page_num}'
     driver.get(url)
-    WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'listingWhiteArea')))
+    
+    try:
+        # Check if the page contains the "page not found" message
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'body')))
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        not_found_element = soup.find('h1', class_='font-size-22 m0 color-red')
+        if not_found_element and "η σελίδα δε βρέθηκε" in not_found_element.text:
+            print(f"Page {page_num} not found. Breaking the loop.")
+            driver.quit()
+            return None  # Indicate that the page was not found
+
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, 'listingWhiteArea')))
+    except TimeoutException:
+        print("Element not found or page not loaded properly. Exiting.")
+        driver.quit()
+        return None
+
     time.sleep(2)
 
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
     listings = soup.find_all('div', class_='listingWhiteArea')
     data = []
 
     for listing in listings:
-        # Check if listing has a website
         if listing.find('li', class_='listingWebsite'):
             continue
 
@@ -81,6 +95,7 @@ def scrape_xo_gr(profession, location, page_num):
 
     driver.quit()
     return data
+
 
 def check_entry_exists(df, phone, mobile):
     phone_str = str(phone).strip()
@@ -129,18 +144,21 @@ def update_excel(file_path, new_data):
         book.save(file_path)
 
 def main():
-    profession = 'ορθοδοντικοι'
+    profession = 'παθολογοι'
     location = 'αθηνα'
-    excel_file = 'info.xlsx'
+    excel_file = 'EVAGGELIO.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
 
-    for page_num in range(1, 6):
+    for page_num in range(9, 22):
         new_data = scrape_xo_gr(profession, location, page_num)
+        if new_data is None:  # If the page was not found, break the loop
+            break
         update_excel(excel_file, new_data)
 
     kill_new_chrome_processes(initial_chrome_pids)
     print('Data has been successfully appended to the Excel file.')
+
 
 if __name__ == "__main__":
     main()
