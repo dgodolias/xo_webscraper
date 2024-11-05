@@ -1,3 +1,5 @@
+import itertools
+from httpcore import TimeoutException
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -70,9 +72,6 @@ def scrape_xo_gr(profession, location, page_num):
     data = []
 
     for listing in listings:
-        if listing.find('li', class_='listingWebsite'):
-            continue
-
         name = listing.find('span', itemprop='name').text
         address = listing.find('span', id=lambda x: x and x.startswith('listingAddress')).text.replace('\n', ', ')
         
@@ -144,17 +143,20 @@ def update_excel(file_path, new_data):
         book.save(file_path)
 
 def main():
-    profession = 'παθολογοι'
-    location = 'αθηνα'
+    professions = ['γιατροί']
+    locations = ['Αθήνα']
     excel_file = 'EVAGGELIO.xlsx'
 
     initial_chrome_pids = get_current_chrome_processes()
 
-    for page_num in range(9, 22):
-        new_data = scrape_xo_gr(profession, location, page_num)
-        if new_data is None:  # If the page was not found, break the loop
-            break
-        update_excel(excel_file, new_data)
+    for profession, location in itertools.product(professions, locations):
+        page_num = 1
+        while True:
+            new_data = scrape_xo_gr(profession, location, page_num)
+            if new_data is None or page_num == 3: 
+                break
+            update_excel(excel_file, new_data)
+            page_num += 1
 
     kill_new_chrome_processes(initial_chrome_pids)
     print('Data has been successfully appended to the Excel file.')
